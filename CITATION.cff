@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+title: "More than a Hack 2027: Frame-level Ball Possession"
+message: "If you use this benchmark, its data or its metrics, please cite it."
+type: dataset
+abstract: >-
+  A frame-level ball-possession benchmark built on one full professional football match
+  (FC Barcelona vs Athletic Club, LaLiga EA Sports 2024-25, matchday 2). Participants label
+  each of 199,319 video frames as home in possession, away in possession, or dead ball.
+  Entries are ranked by spellF1, a possession-interval metric that scores each possession
+  once rather than each frame, and macroF1 is reported alongside it. The repository provides
+  the scorer, a public 5-minute ground truth and reference baselines; the full-match ground
+  truth is held private.
+authors:
+  # TBD: replace with the full author list before publication.
+  - name: "Metrica Sports"
+  - name: "FC Barcelona Innovation Hub"
+repository-code: "https://github.com/metrica-sports/more-than-a-hack-2027"
+license: MIT
+license-url: "https://github.com/metrica-sports/more-than-a-hack-2027/blob/main/LICENSE"
+date-released: "2027-01-01"  # TBD
+version: "1.0.0"             # TBD
+keywords:
+  - football
+  - soccer
+  - ball possession
+  - tracking data
+  - sports analytics
+  - temporal action detection
+  - benchmark

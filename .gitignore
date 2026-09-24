@@ -1,0 +1,64 @@
+# ---------------------------------------------------------------------------------------------
+# This repository is public. The full-match ground truth is not.
+#
+# Everything below either is a private asset, would leak the answer, or is generated output. The
+# history of this repo is new, so anything committed once is committed forever -- when in doubt,
+# add it here first and take it out later.
+# ---------------------------------------------------------------------------------------------
+
+# -- private ground truth ----------------------------------------------------------------------
+# The public ground truth is evaluation/gt/*_possession_gt_public.csv and is committed on purpose.
+# The full-match files below are graded over all 158857 frames and must never be published.
+*_possession_gt.csv
+*_possession_gt_meta.json
+*_possession_gt_reference.csv
+possession_by_frame.pkl
+
+# -- submissions -------------------------------------------------------------------------------
+# Any file in results/ is a set of labels for the whole match. A perfect one is a copy of the
+# ground truth, so the folder ships empty and stays that way.
+evaluation/results/*.csv
+
+# ...with one deliberate exception. The baselines are computed from the ATD alone -- the same ATD
+# every enrolled participant has -- and never read a ground truth of any kind, so they carry no
+# information about the answer. They ship so that a fresh clone has something real to score.
+!evaluation/results/baseline_*.csv
+evaluation/reports/
+evaluation/scoreboard.csv
+
+# -- gated data --------------------------------------------------------------------------------
+# data/ is committed empty, with only its README, so the folder participants are told to unpack
+# into actually exists in a fresh clone. Everything they put in it stays out of git.
+data/*
+!data/README.md
+
+*.mp4
+*.gzip
+*.pl3container
+
+# -- internal documents ---------------------------------------------------------------------------
+# OVERVIEW.md -- the institutional description of the competition -- IS committed. It is the only
+# place that explains why the format changed from 2026, and a document like that circulating by
+# email is exactly the artifact README.md's "anything you were sent earlier is superseded" line
+# exists to prevent. Versioned next to what it describes, it cannot drift out of sight.
+#
+# The 2026 edition's documents were moved to ../mtah2027-organizers/archive-2026/ -- they describe
+# a different competition and belong with the organiser tooling, not in this repository.
+#
+# *.pdf stays as insurance: internal decks and proposals have a habit of landing in the working
+# tree, and this repository is public.
+*.pdf
+
+# Organiser tooling lives in ../mtah2027-organizers, outside this repository. This line is
+# insurance against it being recreated in here by habit.
+organizers/
+
+# -- editors and build artifacts ---------------------------------------------------------------
+.idea/
+.vscode/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.DS_Store

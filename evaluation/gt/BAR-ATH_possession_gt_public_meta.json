@@ -1,0 +1,48 @@
+{
+  "alignment": "id_frame = video_frame + frame_offsets[half]",
+  "covered_video_frames": [
+    [
+      11185,
+      18684
+    ]
+  ],
+  "fps": 25,
+  "frame_offsets": {
+    "1": 1702057,
+    "2": 1702058
+  },
+  "game": "BAR-ATH",
+  "half_id_frames": {
+    "1": [
+      1713242,
+      1792708
+    ],
+    "2": [
+      1812866,
+      1892255
+    ]
+  },
+  "label_counts_in_window": {
+    "A": 2577,
+    "D": 1469,
+    "H": 3454
+  },
+  "labels": {
+    "A": "away in possession, ball alive",
+    "D": "dead ball",
+    "H": "home in possession, ball alive",
+    "X": "no ground truth for this video frame, or no answer from a submission"
+  },
+  "mean_possession_duration_s": 14.191,
+  "n_graded_frames": 7500,
+  "n_possessions": 17,
+  "n_segments": 21,
+  "n_video_frames": 199319,
+  "public_window": {
+    "first_video_frame": 11185,
+    "last_video_frame": 18684,
+    "minutes_of_play": 5.0,
+    "n_frames": 7500,
+    "note": "Real labels inside this window only. Every other frame is X and is never scored. Submissions must still cover all 199319 frames."
+  }
+}

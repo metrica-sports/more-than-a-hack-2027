@@ -1,0 +1,15 @@
+# Optional. Only needed for the helpers and notebooks in starter/.
+# The evaluation needs none of this -- see requirements.txt, which is numpy and pandas.
+#
+# kloppy is pinned to the version the 2026 starter repository used, because that is the version
+# the Metrica FIFA/EPTS export is known to load under.
+#
+# Nothing here is needed to produce a submission: starter/baseline.py reads the raw ATD and writes
+# a scored entry with numpy alone.
+-r requirements.txt
+
+kloppy==3.18.0
+matplotlib
+
+# For the notebooks in starter/
+notebook
