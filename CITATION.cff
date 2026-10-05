@@ -11,14 +11,13 @@ abstract: >-
   the scorer, a public 5-minute ground truth and reference baselines; the full-match ground
   truth is held private.
 authors:
-  # TBD: replace with the full author list before publication.
   - name: "Metrica Sports"
-  - name: "FC Barcelona Innovation Hub"
+  - name: "Barça Innovation Hub"
 repository-code: "https://github.com/metrica-sports/more-than-a-hack-2027"
 license: MIT
 license-url: "https://github.com/metrica-sports/more-than-a-hack-2027/blob/main/LICENSE"
-date-released: "2027-01-01"  # TBD
-version: "1.0.0"             # TBD
+date-released: "2026-10-20"
+version: "1.0.0"
 keywords:
   - football
   - soccer

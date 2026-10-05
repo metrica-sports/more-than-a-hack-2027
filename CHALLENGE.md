@@ -6,8 +6,8 @@ Given one full football match — two videos, automatic tracking with the ball, 
 tagging, homography — produce one label for every frame, saying which team is in possession or that
 the ball is not in play.
 
-199,319 frames. 25 frames per second. Roughly two hours of video, of which about 80 minutes is
-graded.
+199,319 frames. 25 frames per second. Roughly two hours and a quarter of video, of which about
+106 minutes of gameplay (158,857 frames) is graded.
 
 That is the entire problem of Phase 1. The submission file is scored directly, 
 but you will also provide the code and technical documentation explaining how you
@@ -48,23 +48,36 @@ the ball is dead the answer is `D`.
 
 ## Possession rules
 
-> ### ⚠️ TBD — the operational definition
->
-> This section will define exactly how the ground truth treats the ambiguous cases:
->
-> - **passes** — when does possession leave the passer
-> - **challenges and 50/50s** — who owns a contested ball, and for how long
-> - **rebounds and deflections** — off a defender, off the keeper, off the post
-> - **restarts** — the boundary between dead and alive at throw-ins, corners, goal kicks and free
->   kicks, and who is in possession at the moment of the restart
-> - **temporarily loose balls** — a ball rolling free after a tackle, before anyone reaches it
->
-> These rules decide a meaningful fraction of the frames near every transition, which is precisely
-> where the metrics are sensitive. They will be published here before the competition opens.
->
-> **Until then, treat the 5-minute public ground truth as the specification.** It is a worked
-> example of every rule, frame by frame, for 17 possessions. If your reading of the data disagrees
-> with it, the ground truth is right — and telling us about the disagreement is useful.
+### The operational definition
+
+Possession is not a perfectly sharp concept, and some cases are open to interpretation. You do not
+have to guess how they are resolved: the **5 minutes of public ground truth** are your reference.
+
+**Ball in play: the unambiguous part.** Whether the ball is in play is decided by the referee.
+While it is, one of the two teams is always in possession — there is no neutral state. In
+loose-ball phases (a 50/50, a ball running free after a tackle), the team that last had possession
+keeps it.
+
+**Every restart has a clear owner.** Whenever play resumes after a stoppage — kickoff, throw-in,
+corner, goal kick, free kick — one team is clearly in possession. So the real challenge is not
+assigning possession frame by frame, but detecting **when it changes**.
+
+**When possession changes.** Possession passes to the other team when one of its players has the
+ball **under control**. Deciding what counts as "control" is where the ambiguity lies: from the data
+alone, a controlled reception is not always easy to tell apart from a rebound.
+
+These are **not** changes of possession:
+
+- a single touch of the ball without control
+- a pass that is deflected but not intercepted
+- an aerial duel that is won, but without the ball then being controlled
+
+Beyond these, we encourage you to explore and propose your own criteria for "control" and to
+measure how they differ. Your technical document is the place to explain the one you chose.
+
+**The public ground truth is the reference.** It applies these rules frame by frame across 17
+possessions. If your reading of the data disagrees with it, the ground truth is right — and telling
+us about the disagreement is useful.
 
 ### What is already settled
 
@@ -80,7 +93,7 @@ the ball is dead the answer is `D`.
   Nothing is smoothed, interpolated or hand-adjusted afterwards.
 
   So the question that matters is not *how* the labels are computed, but what the corrected
-  tracking means by "dead" and by "owning" — which is what the section above will define.
+  tracking means by "dead" and by "owning" — which is what the definition above describes.
 
 ---
 

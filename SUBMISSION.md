@@ -76,21 +76,21 @@ Short — a few pages is plenty. PDF or Markdown. It should cover:
 
 One Google Form, three fields plus your team name:
 
-**<TBD: submission form URL>**
+**Submission URL will be shared by email to all registered participants**
 
 | field | what |
 |---|---|
-| team name | becomes the name on the published board |
-| possession file | upload your `.csv` (~1.9 MB) |
-| code repository | a URL. Public, or access granted to the organisers |
-| technical document | upload a `.pdf` or `.md` |
+| Team Name | the one stated by all team members in the registration form |
+| Possession file | upload your `.csv` (~1.9 MB) |
+| Public code repository URL | a public URL |
+| Short technical document | upload a `.pdf` or `.md` |
 
-**Deadline: <TBD>**
+**Deadline: November 17, 2026**
 
 Four practical things, because a form is less forgiving than a folder:
 
-- **Name the CSV after your team** — `<team_name>.csv`. The scorer names each row of the board
-  after the file, so this is what puts your name on it.
+- **Name the CSV and the technical document after your team — <team_name>.csv and <team_name>.pdf** The scorer
+  names each row of the board after the file, so this is what puts your name on it.
 - **You need a Google account** to upload. Worth discovering now rather than at the deadline.
 - **One response per team.** You may edit it; the last response before the deadline is the one
   scored.

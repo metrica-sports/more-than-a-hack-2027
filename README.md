@@ -1,7 +1,7 @@
 # More than a Hack 2027 — Phase 1: Ball Possession
 
 **Organised by [Metrica Sports](https://metrica-sports.com), [FC Barcelona](https://www.fcbarcelona.com)
-and the [Mobile World Congress](https://www.mwcbarcelona.com)**, at the Talent Arena in Barcelona.
+and the [Mobile World Capital Barcelona](https://www.mwcbarcelona.com)**, at the Talent Arena in Barcelona.
 
 A football data challenge on real professional match data, open to analysts, data scientists and
 engineers. You are given one complete LaLiga match — two camera feeds, automatic tracking of every
@@ -78,7 +78,7 @@ rank  submission                macroF1  spellF1   poss     dur
 
 Those four are **the same algorithm four times** — nearest tracked player to the ball, then a
 majority vote over a window. Only the window changes. `macroF1` barely moves; `spellF1` moves by a
-factor of five. That disagreement is the whole point of the metric, and
+factor of eleven. That disagreement is the whole point of the metric, and
 [EVALUATION.md](EVALUATION.md) explains it.
 
 Once you have the data, regenerate them yourself and go further:
@@ -98,8 +98,8 @@ It takes two seconds and it is the single most common way a good entry scores no
 
 The match assets are released to enrolled participants who have accepted the terms of use.
 
-1. Enrol: **<TBD: enrolment form URL>**
-2. Read and sign the terms and conditions: **<TBD: terms URL>**
+1. Enrol: **[More than A Hack 2027](https://landing.mobileworldcapital.com/more-than-a-hack-2027)**
+2. Read and sign the terms and conditions in the registration form
 3. You receive a download link.
 4. Unpack it into `./data`, or point `MTAH_DATA_DIR` at wherever you put it.
 
@@ -165,10 +165,10 @@ The notebooks additionally want `kloppy` and `matplotlib` (`requirements-starter
 
 | |                |
 |---|----------------|
-| registration opens | **01/10/2026** |
-| data released | **20/10/2026** |
-| submission deadline | **17/11/2026** |
-| results announced | **<TBD>**      |
+| registration opens | **October 1, 2026** |
+| data released | **October 20, 2026** |
+| submission deadline | **November 17, 2026** |
+| results announced | **Before November 26, 2026**      |
 
 ---
 
@@ -176,7 +176,7 @@ The notebooks additionally want `kloppy` and `matplotlib` (`requirements-starter
 
 Open an issue for anything about the data, the metrics or the documentation — corrections are
 genuinely useful, and a fix that helps you helps everyone equally. For enrolment and the terms of
-use: **<TBD: contact email>**.
+use: **hackathon.talentarena@mobileworldcapital.com**.
 
 ## Licence and citation
 

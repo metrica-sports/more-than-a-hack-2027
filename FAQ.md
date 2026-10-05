@@ -95,10 +95,14 @@ intervals are *phases*, not possessions.
 Yes, provided the organisers can access what you used and your technical document explains it. See
 [RULES.md](RULES.md).
 
+However, as the Terms and Conditions state, participants shall not upload, disclose or otherwise
+make available to any third-party hosted or cloud-based LLM any videos, datasets, confidential
+information or other restricted materials provided in connection with the Competition, or any
+extracts thereof.
+
 ### Can I hand-label some frames?
 
-To **train or validate** a model, yes. To **produce the submission**, no — the labels you submit
-must come out of an algorithm. See [RULES.md](RULES.md).
+No — the labels you submit must come out of an algorithm. See [RULES.md](RULES.md).
 
 ### What happens if my file is malformed?
 

@@ -28,8 +28,8 @@ legitimate as one that reads the video. There is no intended solution.
 The match assets are gated. They are released to participants who have enrolled and accepted the
 terms of data use.
 
-1. Enrol: **<TBD: enrolment form URL>**
-2. Read and sign the terms and conditions: **<TBD: terms URL>**
+1. Enrol: **[<More Than A Hack 2027>](https://landing.mobileworldcapital.com/more-than-a-hack-2027)**
+2. Read and sign the terms and conditions in the registration form
 3. You receive a download link.
 4. Unpack it into `data/`, keeping the names it arrives with:
 
@@ -157,8 +157,6 @@ unless you enjoy silent empty results.
 | `Direction of ball entry` | `Horizontal` · `Vertical` · `Diagonal` |
 | `Max Players in the box` | `1` … `6`, and `7+` — a **string**, not an integer |
 
-Note the club is spelled **`Atletic Club`**, with one `h`, in both the ATD metadata and this file.
-Map club names to sides once, at the edge of your code.
 
 ### Time base — verified
 

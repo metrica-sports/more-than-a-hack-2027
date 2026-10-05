@@ -62,11 +62,8 @@ approximately — the same file.
 
 ## Eligibility and teams
 
-**<TBD: team size.>**
-
-**<TBD: eligibility — who may enter.>**
-
-**<TBD: code of conduct.>**
+Each team must be composed of 3 to 5 members 
+(Teams with less than 3 members will not be eligible for the Innovation Challenge and the Final Pitch.)
 
 ---
 
