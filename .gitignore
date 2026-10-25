@@ -62,3 +62,6 @@ __pycache__/
 venv/
 env/
 .DS_Store
+
+# -- team pipeline output ---------------------------------------------------------------
+submissions/
