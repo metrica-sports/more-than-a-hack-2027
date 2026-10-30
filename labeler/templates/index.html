@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barca Vision Labeler -- Tactical Possession Annotation Studio</title>
+  <style>
+    :root {
+      --bg-dark: #0a0e14;
+      --card-bg: #141b24;
+      --card-border: #232d3d;
+      --pitch-green: #1b4d2e;
+      --pitch-grass-light: #205c37;
+      --pitch-lines: rgba(255, 255, 255, 0.75);
+      --barca-blue: #004d98;
+      --barca-red: #a50044;
+      --barca-gold: #edbb00;
+      --ath-red: #ee2524;
+      --ath-white: #ffffff;
+      --dead-yellow: #f59e0b;
+      --accent: #3b82f6;
+      --text-main: #f3f4f6;
+      --text-dim: #9ca3af;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Header */
+    header {
+      background: #0f1620;
+      border-bottom: 1px solid var(--card-border);
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand span.badge {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    button.btn {
+      background: #1e293b;
+      color: var(--text-main);
+      border: 1px solid #334155;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    button.btn:hover { background: #334155; }
+    button.btn-primary { background: #2563eb; border-color: #3b82f6; }
+    button.btn-primary:hover { background: #1d4ed8; }
+    button.btn-success { background: #16a34a; border-color: #22c55e; }
+    button.btn-success:hover { background: #15803d; }
+
+    /* Main Workspace */
+    .workspace {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* Pitch Viewport */
+    .pitch-viewport {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      position: relative;
+      background: #090d13;
+    }
+    .pitch-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 1080px;
+      max-height: calc(1080px * (68 / 105.3));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    canvas#pitchCanvas {
+      width: 100%;
+      height: 100%;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+      border-radius: 8px;
+      border: 2px solid #233142;
+    }
+    .ball-occluded-banner {
+      position: absolute;
+      top: 15px;
+      background: rgba(239, 68, 68, 0.9);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+      display: none;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+
+    /* Telemetry Sidebar */
+    .sidebar {
+      width: 340px;
+      background: var(--card-bg);
+      border-left: 1px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      padding: 14px;
+      gap: 12px;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    .card {
+      background: #19222e;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .card-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-dim);
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Possession Status Badge */
+    .status-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 10px;
+      border-radius: 6px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+    .status-H { background: rgba(0, 77, 152, 0.4); border: 2px solid #3b82f6; color: #93c5fd; }
+    .status-A { background: rgba(238, 37, 36, 0.4); border: 2px solid #ef4444; color: #fca5a5; }
+    .status-D { background: rgba(245, 158, 11, 0.35); border: 2px solid #f59e0b; color: #fde68a; }
+    .status-X { background: rgba(55, 65, 81, 0.4); border: 2px dashed #4b5563; color: #9ca3af; }
+
+    /* Telemetry Grid */
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+      margin-bottom: 6px;
+    }
+    .stat-label { color: var(--text-dim); }
+    .stat-value { font-weight: 700; font-family: monospace; font-size: 0.88rem; }
+    .margin-bar-container {
+      width: 100%;
+      height: 8px;
+      background: #202a37;
+      border-radius: 4px;
+      position: relative;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+    .margin-bar-fill {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      height: 100%;
+      transition: width 0.1s linear, left 0.1s linear;
+    }
+
+    /* AI Card */
+    .ai-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #111822;
+      border: 1px solid #283548;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-top: 6px;
+    }
+    .ai-pred {
+      font-weight: 800;
+      font-size: 0.95rem;
+    }
+    .ai-conf {
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+
+    /* Rapid Labeling Hotkey Buttons */
+    .label-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .btn-lbl {
+      padding: 10px 4px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      text-align: center;
+      transition: transform 0.1s;
+    }
+    .btn-lbl:active { transform: scale(0.96); }
+    .btn-lbl-H { background: #004d98; color: white; border-color: #3b82f6; }
+    .btn-lbl-A { background: #b91c1c; color: white; border-color: #ef4444; }
+    .btn-lbl-D { background: #b45309; color: white; border-color: #f59e0b; }
+    .btn-lbl-clear {
+      grid-column: span 3;
+      background: #1f2937;
+      color: #9ca3af;
+      border: 1px solid #374151;
+      padding: 6px;
+    }
+
+    /* Range Box */
+    .range-box {
+      background: #111822;
+      border: 1px solid #233142;
+      border-radius: 6px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .range-inputs {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+    }
+
+    /* Timeline & Scrubber */
+    .timeline-bar {
+      background: #0f1620;
+      border-top: 1px solid var(--card-border);
+      padding: 10px 20px 14px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .clock-display {
+      font-size: 1.15rem;
+      font-weight: 800;
+      font-family: monospace;
+      letter-spacing: 0.5px;
+      color: #60a5fa;
+    }
+    .playback-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ribbon-container {
+      position: relative;
+      height: 36px;
+      background: #1a2230;
+      border: 1px solid #2a374a;
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    canvas#ribbonCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .playhead-marker {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: #ffffff;
+      box-shadow: 0 0 8px #ffffff;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .selection-range-marker {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      background: rgba(59, 130, 246, 0.35);
+      border-left: 2px solid #60a5fa;
+      border-right: 2px solid #60a5fa;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* Modals / Tooltips */
+    .hotkey-pill {
+      background: #374151;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-family: monospace;
+      font-weight: 700;
+      margin-left: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="brand">
+      <h1>⚽ Barca Vision Labeler</h1>
+      <span class="badge">Tactical Studio</span>
+      <span style="font-size: 0.8rem; color: #9ca3af; margin-left: 10px;">FC Barcelona vs Athletic Club (ATD Tracking)</span>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn" id="btnLoadGT" title="Load official 5-minute competition ground truth as gold standard">
+        📥 Load Reference GT
+      </button>
+      <button class="btn" id="btnAutoAI" title="Pre-populate selected range using AI Heuristic">
+        ⚡ AI Fill Selection
+      </button>
+      <button class="btn btn-primary" id="btnExportCSV" title="Export complete match submission file (frame,label)">
+        📄 Export Ground Truth CSV
+      </button>
+      <button class="btn btn-success" id="btnExportTrain" title="Export labeled subset formatted directly for ML training">
+        🚀 Export ML Training Set
+      </button>
+    </div>
+  </header>
+
+  <!-- Middle Interactive Stage -->
+  <div class="workspace">
+    
+    <!-- 2D Pitch Canvas -->
+    <div class="pitch-viewport">
+      <div class="ball-occluded-banner" id="occludedBanner">⚠️ BALL OCCLUDED (ESTIMATING VIA CENTROIDS)</div>
+      <div class="pitch-container">
+        <canvas id="pitchCanvas" width="1053" height="680"></canvas>
+      </div>
+    </div>
+
+    <!-- Right Telemetry & Controls Sidebar -->
+    <div class="sidebar">
+      
+      <!-- Current State Card -->
+      <div class="card">
+        <div class="card-title">Active Frame Possession</div>
+        <div id="statusBadge" class="status-badge status-X">UNLABELED</div>
+        
+        <div class="label-actions">
+          <button class="btn-lbl btn-lbl-H" id="btnTagH">HOME <span class="hotkey-pill">H</span></button>
+          <button class="btn-lbl btn-lbl-A" id="btnTagA">AWAY <span class="hotkey-pill">A</span></button>
+          <button class="btn-lbl btn-lbl-D" id="btnTagD">DEAD <span class="hotkey-pill">D</span></button>
+          <button class="btn-lbl btn-lbl-clear" id="btnTagClear">Clear Label <span class="hotkey-pill">X / Del</span></button>
+        </div>
+      </div>
+
+      <!-- Range / Spell Labeling (Speed Mode) -->
+      <div class="card">
+        <div class="card-title">
+          <span>Range / Spell Labeler</span>
+          <span style="font-size: 0.7rem; color: #60a5fa;">Fast 10x Workflow</span>
+        </div>
+        <div class="range-box">
+          <div class="range-inputs">
+            <span>In: <b id="rangeInText">--</b> <span class="hotkey-pill">I</span></span>
+            <span>Out: <b id="rangeOutText">--</b> <span class="hotkey-pill">O</span></span>
+          </div>
+          <div style="font-size: 0.75rem; color: #9ca3af;" id="rangeDurationText">No active range marked</div>
+          <div style="display: flex; gap: 6px; margin-top: 4px;">
+            <button class="btn btn-primary" style="flex: 1; padding: 6px;" id="btnApplyRange">
+              Apply to Range
+            </button>
+            <button class="btn" style="padding: 6px;" id="btnClearRange" title="Clear In/Out">
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Physics Telemetry -->
+      <div class="card">
+        <div class="card-title">Spatial & Ball Kinematics</div>
+        
+        <div class="stat-row">
+          <span class="stat-label">Ball Speed:</span>
+          <span class="stat-value" id="valBallSpeed">-- m/s</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Nearest Home (BAR):</span>
+          <span class="stat-value" style="color: #60a5fa;" id="valNearestH">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Nearest Away (ATH):</span>
+          <span class="stat-value" style="color: #f87171;" id="valNearestA">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Proximity Margin:</span>
+          <span class="stat-value" id="valMargin">-- m</span>
+        </div>
+        <div class="margin-bar-container">
+          <div class="margin-bar-fill" id="marginBar"></div>
+        </div>
+
+        <div style="margin-top: 10px;" class="stat-row">
+          <span class="stat-label">Team Speeds (H / A):</span>
+          <span class="stat-value" id="valTeamSpeeds">-- / -- m/s</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Overall Velocity:</span>
+          <span class="stat-value" id="valOverallSpeed">-- m/s</span>
+        </div>
+      </div>
+
+      <!-- AI Assistant Suggestion -->
+      <div class="card">
+        <div class="card-title">AI Pre-Annotation Assist</div>
+        <div class="ai-box">
+          <div>
+            <div class="ai-pred" id="aiPredLabel">HOME (H)</div>
+            <div class="ai-conf" id="aiPredConf">Confidence: 85%</div>
+          </div>
+          <button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.75rem;" id="btnAcceptAI">
+            Accept <span class="hotkey-pill">Enter</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Session Statistics -->
+      <div class="card">
+        <div class="card-title">Session Progress</div>
+        <div class="stat-row">
+          <span class="stat-label">Labeled Frames:</span>
+          <span class="stat-value" id="statTotalLabeled">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Class Ratio (H / A / D):</span>
+          <span class="stat-value" id="statClassRatio">0% / 0% / 0%</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Possession Spells:</span>
+          <span class="stat-value" id="statSpellCount">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Mean Spell Duration:</span>
+          <span class="stat-value" id="statMeanDuration">0.0s (GT: 14.2s)</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Bottom Timeline & Scrubber -->
+  <div class="timeline-bar">
+    <div class="timeline-header">
+      <div class="playback-controls">
+        <button class="btn" id="btnStepBack1s" title="Step back 1 second (Shift + Left)">⏪ -1s</button>
+        <button class="btn" id="btnStepBack" title="Step back 1 frame (Left Arrow)">◀</button>
+        <button class="btn btn-primary" id="btnPlayPause" style="min-width: 80px;" title="Play / Pause (Space)">▶ Play</button>
+        <button class="btn" id="btnStepFwd" title="Step forward 1 frame (Right Arrow)">▶</button>
+        <button class="btn" id="btnStepFwd1s" title="Step forward 1 second (Shift + Right)">+1s ⏩</button>
+        
+        <select id="selectSpeed" style="background: #1e293b; color: white; border: 1px solid #334155; padding: 5px 8px; border-radius: 6px; font-size: 0.8rem; margin-left: 8px;">
+          <option value="0.25">0.25x</option>
+          <option value="0.5">0.5x</option>
+          <option value="1.0" selected>1.0x (Real-time 25fps)</option>
+          <option value="2.0">2.0x</option>
+        </select>
+      </div>
+
+      <div class="clock-display">
+        <span id="txtClock">00:00.00</span>
+        <span style="font-size: 0.85rem; color: #9ca3af; margin-left: 10px;" id="txtFrameCounter">Frame: 11,185 / 199,319</span>
+      </div>
+
+      <!-- Quick Jump & Zoom Controls -->
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #9ca3af;">
+        <span>Go to:</span>
+        <input type="number" id="inputJumpFrame" placeholder="Frame..." style="width: 80px; background: #1e293b; color: white; border: 1px solid #334155; padding: 4px 6px; border-radius: 4px; font-size: 0.8rem;">
+        <button class="btn" id="btnJump" style="padding: 3px 8px; font-size: 0.75rem;">Go</button>
+        <button class="btn" id="btnJump1stKO" style="padding: 3px 8px; font-size: 0.75rem;" title="Jump to 1st Half Kickoff (11,185)">1st KO</button>
+        <button class="btn" id="btnJump2ndKO" style="padding: 3px 8px; font-size: 0.75rem;" title="Jump to 2nd Half Kickoff (113,741)">2nd KO</button>
+        <span style="margin-left: 6px;">Zoom:</span>
+        <button class="btn" style="padding: 3px 8px; font-size: 0.75rem;" id="btnZoom15m">15m</button>
+        <button class="btn" style="padding: 3px 8px; font-size: 0.75rem;" id="btnZoom5m">5m</button>
+        <button class="btn" style="padding: 3px 8px; font-size: 0.75rem;" id="btnZoomFull">Full</button>
+        <button class="btn" style="padding: 3px 8px; font-size: 0.75rem; background: #334155;" id="btnHelp" title="Keyboard Shortcuts Cheat Sheet">⌨️ Help</button>
+      </div>
+    </div>
+
+    <!-- Multi-Track Possession Ribbon Canvas -->
+    <div class="ribbon-container" id="ribbonBox">
+      <canvas id="ribbonCanvas" width="1600" height="36"></canvas>
+      <div class="playhead-marker" id="playheadMarker"></div>
+      <div class="selection-range-marker" id="selectionMarker" style="display: none;"></div>
+    </div>
+  </div>
+
+  <script>
+    // State Variables
+    let currentFrame = 11185; // Kickoff
+    let totalFrames = 199319;
+    let fps = 25;
+    let isPlaying = false;
+    let playbackSpeed = 1.0;
+    let playInterval = null;
+
+    let rangeIn = null;
+    let rangeOut = null;
+
+    let windowStart = 11185;
+    let windowEnd = 11185 + 22500; // default 15 mins
+
+    let frameCache = new Map(); // video_frame -> frameData
+    let spellsData = [];
+    let ballHistory = []; // last 12 ball positions for trajectory trail
+
+    // Canvas elements
+    const pitchCanvas = document.getElementById("pitchCanvas");
+    const pitchCtx = pitchCanvas.getContext("2d");
+
+    const ribbonCanvas = document.getElementById("ribbonCanvas");
+    const ribbonCtx = ribbonCanvas.getContext("2d");
+    const playheadMarker = document.getElementById("playheadMarker");
+    const selectionMarker = document.getElementById("selectionMarker");
+
+    // Init
+    window.addEventListener("DOMContentLoaded", async () => {
+      await fetchConfig();
+      await fetchOverview();
+      await loadFrame(currentFrame);
+      setupEventListeners();
+      renderRibbon();
+    });
+
+    async function fetchConfig() {
+      try {
+        const res = await fetch("/api/config");
+        const data = await res.json();
+        totalFrames = data.total_frames;
+        fps = data.fps;
+        currentFrame = data.default_kickoff || 11185;
+      } catch (err) {
+        console.error("Config fetch error:", err);
+      }
+    }
+
+    async function fetchOverview() {
+      try {
+        const res = await fetch("/api/labels_overview");
+        const data = await res.json();
+        spellsData = data.spells || [];
+        updateStatsUI(data.stats);
+        renderRibbon();
+      } catch (err) {
+        console.error("Overview error:", err);
+      }
+    }
+
+    // Load Single Frame
+    async function loadFrame(vf) {
+      currentFrame = Math.max(0, Math.min(vf, totalFrames - 1));
+      
+      let fd = frameCache.get(currentFrame);
+      if (!fd) {
+        // Prefetch small chunk in background
+        prefetchChunk(currentFrame, 150);
+        try {
+          const res = await fetch(`/api/frame/${currentFrame}`);
+          fd = await res.json();
+          frameCache.set(currentFrame, fd);
+        } catch (err) {
+          console.error("Load frame error:", err);
+          return;
+        }
+      }
+
+      updateUI(fd);
+      drawPitch(fd);
+      updateTimelinePlayhead();
+    }
+
+    async function prefetchChunk(start, length) {
+      try {
+        const res = await fetch(`/api/chunk?start=${start}&length=${length}`);
+        const data = await res.json();
+        if (data.frames) {
+          for (let f of data.frames) {
+            frameCache.set(f.video_frame, f);
+          }
+        }
+      } catch (e) {}
+    }
+
+    // UI Updates
+    function updateUI(fd) {
+      if (!fd) return;
+      document.getElementById("txtClock").textContent = fd.timestamp;
+      document.getElementById("txtFrameCounter").textContent = `Frame: ${fd.video_frame.toLocaleString()} / ${totalFrames.toLocaleString()}`;
+
+      // Status Badge
+      const sb = document.getElementById("statusBadge");
+      const lbl = fd.label;
+      sb.className = "status-badge status-" + (lbl || "X");
+      if (lbl === "H") sb.textContent = "HOME (BARCELONA)";
+      else if (lbl === "A") sb.textContent = "AWAY (ATHLETIC)";
+      else if (lbl === "D") sb.textContent = "DEAD BALL (STOPPAGE)";
+      else sb.textContent = "UNLABELED (X)";
+
+      // Telemetry
+      const telem = fd.telemetry;
+      if (fd.ball) {
+        document.getElementById("occludedBanner").style.display = "none";
+        document.getElementById("valBallSpeed").textContent = `${fd.ball.s.toFixed(1)} m/s`;
+      } else {
+        document.getElementById("occludedBanner").style.display = "block";
+        document.getElementById("valBallSpeed").textContent = "Occluded (NaN)";
+      }
+
+      if (telem.nearest_home) {
+        document.getElementById("valNearestH").textContent = `#${telem.nearest_home.slot} (${telem.nearest_home.dist}m)`;
+      } else {
+        document.getElementById("valNearestH").textContent = "--";
+      }
+
+      if (telem.nearest_away) {
+        document.getElementById("valNearestA").textContent = `#${telem.nearest_away.slot} (${telem.nearest_away.dist}m)`;
+      } else {
+        document.getElementById("valNearestA").textContent = "--";
+      }
+
+      document.getElementById("valMargin").textContent = `${telem.margin > 0 ? "+" : ""}${telem.margin} m`;
+
+      // Margin bar: 0 is center (50%), +10 is 100% (blue), -10 is 0% (red)
+      const mbar = document.getElementById("marginBar");
+      const clampedMargin = Math.max(-10, Math.min(10, telem.margin));
+      if (clampedMargin >= 0) {
+        mbar.style.left = "50%";
+        mbar.style.width = `${(clampedMargin / 10) * 50}%`;
+        mbar.style.background = "#3b82f6";
+      } else {
+        const w = (Math.abs(clampedMargin) / 10) * 50;
+        mbar.style.left = `${50 - w}%`;
+        mbar.style.width = `${w}%`;
+        mbar.style.background = "#ef4444";
+      }
+
+      document.getElementById("valTeamSpeeds").textContent = `${telem.home_speed} / ${telem.away_speed} m/s`;
+      document.getElementById("valOverallSpeed").textContent = `${telem.overall_speed} m/s`;
+
+      // AI Suggestion
+      if (telem.ai_suggestion) {
+        const ai = telem.ai_suggestion;
+        const nameMap = { "H": "HOME (Barca)", "A": "AWAY (Athletic)", "D": "DEAD BALL" };
+        document.getElementById("aiPredLabel").textContent = nameMap[ai.label] || ai.label;
+        document.getElementById("aiPredConf").textContent = `Confidence: ${(ai.confidence * 100).toFixed(0)}%`;
+      }
+
+      // Range text
+      updateRangeUI();
+    }
+
+    function updateRangeUI() {
+      const inEl = document.getElementById("rangeInText");
+      const outEl = document.getElementById("rangeOutText");
+      const durEl = document.getElementById("rangeDurationText");
+
+      if (rangeIn !== null) inEl.textContent = rangeIn.toLocaleString();
+      else inEl.textContent = "--";
+
+      if (rangeOut !== null) outEl.textContent = rangeOut.toLocaleString();
+      else outEl.textContent = "--";
+
+      if (rangeIn !== null && rangeOut !== null) {
+        const span = Math.abs(rangeOut - rangeIn) + 1;
+        const sec = (span / fps).toFixed(2);
+        durEl.textContent = `Selection: ${span} frames (${sec}s)`;
+      } else {
+        durEl.textContent = "No active range marked";
+      }
+
+      updateSelectionMarker();
+    }
+
+    function updateStatsUI(stats) {
+      if (!stats) return;
+      document.getElementById("statTotalLabeled").textContent = `${stats.total.toLocaleString()} frames`;
+      if (stats.total > 0) {
+        const ph = ((stats.H / stats.total) * 100).toFixed(0);
+        const pa = ((stats.A / stats.total) * 100).toFixed(0);
+        const pd = ((stats.D / stats.total) * 100).toFixed(0);
+        document.getElementById("statClassRatio").textContent = `H: ${ph}% | A: ${pa}% | D: ${pd}%`;
+      }
+      document.getElementById("statSpellCount").textContent = `${stats.spells_count} possessions`;
+      document.getElementById("statMeanDuration").textContent = `${stats.mean_duration}s (GT: 14.2s)`;
+    }
+
+    // DRAW TACTICAL PITCH
+    function drawPitch(fd) {
+      const w = pitchCanvas.width;
+      const h = pitchCanvas.height;
+
+      // 1. Grass field background
+      pitchCtx.fillStyle = "#164528";
+      pitchCtx.fillRect(0, 0, w, h);
+
+      // Alternating pitch mowing stripes
+      pitchCtx.fillStyle = "rgba(255, 255, 255, 0.03)";
+      const nStripes = 10;
+      const stripeW = w / nStripes;
+      for (let i = 0; i < nStripes; i += 2) {
+        pitchCtx.fillRect(i * stripeW, 0, stripeW, h);
+      }
+
+      // Pitch Margins
+      const margin = 20;
+      const pw = w - 2 * margin;
+      const ph = h - 2 * margin;
+
+      pitchCtx.strokeStyle = "rgba(255, 255, 255, 0.75)";
+      pitchCtx.lineWidth = 2.5;
+
+      // Outer boundary line
+      pitchCtx.strokeRect(margin, margin, pw, ph);
+
+      // Halfway line
+      pitchCtx.beginPath();
+      pitchCtx.moveTo(margin + pw / 2, margin);
+      pitchCtx.lineTo(margin + pw / 2, margin + ph);
+      pitchCtx.stroke();
+
+      // Center circle (radius 9.15m in 105.3m)
+      const centerR = (9.15 / 105.3) * pw;
+      pitchCtx.beginPath();
+      pitchCtx.arc(margin + pw / 2, margin + ph / 2, centerR, 0, Math.PI * 2);
+      pitchCtx.stroke();
+
+      // Center spot
+      pitchCtx.fillStyle = "white";
+      pitchCtx.beginPath();
+      pitchCtx.arc(margin + pw / 2, margin + ph / 2, 3.5, 0, Math.PI * 2);
+      pitchCtx.fill();
+
+      // Penalty Areas (16.5m depth, 40.32m width)
+      const penDepth = (16.5 / 105.3) * pw;
+      const penWidth = (40.32 / 68.0) * ph;
+      const penTop = margin + (ph - penWidth) / 2;
+
+      // Left Penalty Box
+      pitchCtx.strokeRect(margin, penTop, penDepth, penWidth);
+      // Right Penalty Box
+      pitchCtx.strokeRect(margin + pw - penDepth, penTop, penDepth, penWidth);
+
+      // 6-yard Goal Areas (5.5m depth, 18.32m width)
+      const gDepth = (5.5 / 105.3) * pw;
+      const gWidth = (18.32 / 68.0) * ph;
+      const gTop = margin + (ph - gWidth) / 2;
+      pitchCtx.strokeRect(margin, gTop, gDepth, gWidth);
+      pitchCtx.strokeRect(margin + pw - gDepth, gTop, gDepth, gWidth);
+
+      // Function to transform [0, 1] normalized coords to Canvas pixels
+      const toX = (nx) => margin + nx * pw;
+      const toY = (ny) => margin + ny * ph;
+
+      if (!fd) return;
+
+      // 2. Centroid markers
+      const telem = fd.telemetry;
+      if (telem) {
+        // Home centroid
+        pitchCtx.strokeStyle = "rgba(59, 130, 246, 0.4)";
+        pitchCtx.setLineDash([4, 4]);
+        pitchCtx.strokeRect(toX(telem.home_centroid.x) - 15, toY(telem.home_centroid.y) - 15, 30, 30);
+        // Away centroid
+        pitchCtx.strokeStyle = "rgba(239, 68, 68, 0.4)";
+        pitchCtx.strokeRect(toX(telem.away_centroid.x) - 15, toY(telem.away_centroid.y) - 15, 30, 30);
+        pitchCtx.setLineDash([]);
+      }
+
+      // 3. Proximity lines to ball
+      if (fd.ball) {
+        const bx = toX(fd.ball.x);
+        const by = toY(fd.ball.y);
+
+        // Update ball history trail
+        ballHistory.push({ x: bx, y: by });
+        if (ballHistory.length > 12) ballHistory.shift();
+
+        // Draw trail
+        for (let i = 0; i < ballHistory.length - 1; i++) {
+          const alpha = (i + 1) / ballHistory.length * 0.4;
+          pitchCtx.strokeStyle = `rgba(251, 191, 36, ${alpha})`;
+          pitchCtx.lineWidth = 2;
+          pitchCtx.beginPath();
+          pitchCtx.moveTo(ballHistory[i].x, ballHistory[i].y);
+          pitchCtx.lineTo(ballHistory[i+1].x, ballHistory[i+1].y);
+          pitchCtx.stroke();
+        }
+
+        // Proximity lines
+        if (telem.nearest_home) {
+          const nh = fd.players.find(p => p.slot === telem.nearest_home.slot);
+          if (nh) {
+            pitchCtx.strokeStyle = "rgba(96, 165, 250, 0.75)";
+            pitchCtx.setLineDash([3, 3]);
+            pitchCtx.lineWidth = 1.8;
+            pitchCtx.beginPath();
+            pitchCtx.moveTo(bx, by);
+            pitchCtx.lineTo(toX(nh.x), toY(nh.y));
+            pitchCtx.stroke();
+          }
+        }
+        if (telem.nearest_away) {
+          const na = fd.players.find(p => p.slot === telem.nearest_away.slot);
+          if (na) {
+            pitchCtx.strokeStyle = "rgba(248, 113, 113, 0.75)";
+            pitchCtx.setLineDash([3, 3]);
+            pitchCtx.lineWidth = 1.8;
+            pitchCtx.beginPath();
+            pitchCtx.moveTo(bx, by);
+            pitchCtx.lineTo(toX(na.x), toY(na.y));
+            pitchCtx.stroke();
+          }
+        }
+        pitchCtx.setLineDash([]);
+      }
+
+      // 4. Draw Players
+      const pRadius = 11;
+      for (let p of fd.players) {
+        const px = toX(p.x);
+        const py = toY(p.y);
+
+        pitchCtx.save();
+        pitchCtx.beginPath();
+        pitchCtx.arc(px, py, pRadius, 0, Math.PI * 2);
+
+        if (p.team === "H") {
+          // Barcelona (Blaugrana navy + gold border)
+          pitchCtx.fillStyle = "#004d98";
+          pitchCtx.fill();
+          pitchCtx.lineWidth = 2.2;
+          pitchCtx.strokeStyle = "#edbb00";
+          pitchCtx.stroke();
+        } else {
+          // Athletic Club (Crimson + white border)
+          pitchCtx.fillStyle = "#ee2524";
+          pitchCtx.fill();
+          pitchCtx.lineWidth = 2.2;
+          pitchCtx.strokeStyle = "#ffffff";
+          pitchCtx.stroke();
+        }
+
+        // Draw Player Slot Number
+        pitchCtx.fillStyle = "white";
+        pitchCtx.font = "bold 9px sans-serif";
+        pitchCtx.textAlign = "center";
+        pitchCtx.textBaseline = "middle";
+        pitchCtx.fillText(p.slot, px, py);
+
+        // Speed Vector arrow
+        if (p.s > 0.5) {
+          const arrowLen = Math.min(30, p.s * 4);
+          pitchCtx.strokeStyle = p.team === "H" ? "#60a5fa" : "#fca5a5";
+          pitchCtx.lineWidth = 1.5;
+          pitchCtx.beginPath();
+          pitchCtx.moveTo(px, py);
+          pitchCtx.lineTo(px + (arrowLen * (p.team === "H" ? 0.7 : -0.7)), py);
+          pitchCtx.stroke();
+        }
+
+        pitchCtx.restore();
+      }
+
+      // 5. Draw Ball
+      if (fd.ball) {
+        const bx = toX(fd.ball.x);
+        const by = toY(fd.ball.y);
+
+        // Glow ring
+        pitchCtx.beginPath();
+        pitchCtx.arc(bx, by, 10, 0, Math.PI * 2);
+        pitchCtx.fillStyle = "rgba(251, 191, 36, 0.3)";
+        pitchCtx.fill();
+
+        // Ball body
+        pitchCtx.beginPath();
+        pitchCtx.arc(bx, by, 5.5, 0, Math.PI * 2);
+        pitchCtx.fillStyle = "#fbbf24";
+        pitchCtx.fill();
+        pitchCtx.strokeStyle = "#ffffff";
+        pitchCtx.lineWidth = 1.5;
+        pitchCtx.stroke();
+      }
+    }
+
+    // MULTI-TRACK TIMELINE RIBBON
+    function renderRibbon() {
+      const rw = ribbonCanvas.width;
+      const rh = ribbonCanvas.height;
+
+      ribbonCtx.fillStyle = "#141c26";
+      ribbonCtx.fillRect(0, 0, rw, rh);
+
+      const span = windowEnd - windowStart;
+      if (span <= 0) return;
+
+      // Draw spells
+      for (let sp of spellsData) {
+        if (sp.end < windowStart || sp.start > windowEnd) continue;
+
+        const x1 = Math.max(0, (sp.start - windowStart) / span * rw);
+        const x2 = Math.min(rw, (sp.end - windowStart) / span * rw);
+        const width = Math.max(1, x2 - x1);
+
+        if (sp.label === "H") ribbonCtx.fillStyle = "#2563eb"; // Blue
+        else if (sp.label === "A") ribbonCtx.fillStyle = "#dc2626"; // Red
+        else if (sp.label === "D") ribbonCtx.fillStyle = "#d97706"; // Amber
+        else ribbonCtx.fillStyle = "#4b5563";
+
+        ribbonCtx.fillRect(x1, 2, width, rh - 4);
+      }
+    }
+
+    function updateTimelinePlayhead() {
+      const span = windowEnd - windowStart;
+      const pct = Math.max(0, Math.min(1, (currentFrame - windowStart) / span));
+      playheadMarker.style.left = `${pct * 100}%`;
+    }
+
+    function updateSelectionMarker() {
+      if (rangeIn === null || rangeOut === null) {
+        selectionMarker.style.display = "none";
+        return;
+      }
+      const span = windowEnd - windowStart;
+      const startF = Math.min(rangeIn, rangeOut);
+      const endF = Math.max(rangeIn, rangeOut);
+
+      const p1 = Math.max(0, Math.min(1, (startF - windowStart) / span));
+      const p2 = Math.max(0, Math.min(1, (endF - windowStart) / span));
+
+      selectionMarker.style.display = "block";
+      selectionMarker.style.left = `${p1 * 100}%`;
+      selectionMarker.style.width = `${(p2 - p1) * 100}%`;
+    }
+
+    // LABELING ACTIONS
+    async function tagCurrent(label) {
+      if (rangeIn !== null && rangeOut !== null) {
+        // Tag active range
+        await tagRange(rangeIn, rangeOut, label);
+      } else {
+        // Tag single frame
+        try {
+          const res = await fetch("/api/label", {
+            method: "POST",
+            body: JSON.stringify({ frame: currentFrame, label: label })
+          });
+          const fd = frameCache.get(currentFrame);
+          if (fd) fd.label = label;
+          updateUI(fd);
+          fetchOverview();
+        } catch (e) {}
+      }
+    }
+
+    async function tagRange(start, end, label) {
+      try {
+        const res = await fetch("/api/label_range", {
+          method: "POST",
+          body: JSON.stringify({ start, end, label })
+        });
+        // Invalidate cache
+        frameCache.clear();
+        await loadFrame(currentFrame);
+        await fetchOverview();
+      } catch (e) {}
+    }
+
+    // PLAYBACK LOOP
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      const btn = document.getElementById("btnPlayPause");
+      if (isPlaying) {
+        btn.textContent = "⏸ Pause";
+        btn.className = "btn btn-primary";
+        const intervalMs = 1000 / (fps * playbackSpeed);
+        playInterval = setInterval(() => {
+          if (currentFrame >= totalFrames - 1) {
+            togglePlay();
+            return;
+          }
+          loadFrame(currentFrame + 1);
+        }, intervalMs);
+      } else {
+        btn.textContent = "▶ Play";
+        clearInterval(playInterval);
+      }
+    }
+
+    // EVENT LISTENERS & HOTKEYS
+    function setupEventListeners() {
+      // Buttons
+      document.getElementById("btnPlayPause").addEventListener("click", togglePlay);
+      document.getElementById("btnStepBack").addEventListener("click", () => loadFrame(currentFrame - 1));
+      document.getElementById("btnStepFwd").addEventListener("click", () => loadFrame(currentFrame + 1));
+      document.getElementById("btnStepBack1s").addEventListener("click", () => loadFrame(currentFrame - fps));
+      document.getElementById("btnStepFwd1s").addEventListener("click", () => loadFrame(currentFrame + fps));
+
+      document.getElementById("selectSpeed").addEventListener("change", (e) => {
+        playbackSpeed = parseFloat(e.target.value);
+        if (isPlaying) { togglePlay(); togglePlay(); }
+      });
+
+      // Tags
+      document.getElementById("btnTagH").addEventListener("click", () => tagCurrent("H"));
+      document.getElementById("btnTagA").addEventListener("click", () => tagCurrent("A"));
+      document.getElementById("btnTagD").addEventListener("click", () => tagCurrent("D"));
+      document.getElementById("btnTagClear").addEventListener("click", () => tagCurrent(null));
+
+      // Range
+      document.getElementById("btnClearRange").addEventListener("click", () => {
+        rangeIn = null;
+        rangeOut = null;
+        updateRangeUI();
+      });
+
+      document.getElementById("btnApplyRange").addEventListener("click", () => {
+        const activeLbl = frameCache.get(currentFrame)?.label || "H";
+        if (rangeIn !== null && rangeOut !== null) {
+          tagRange(rangeIn, rangeOut, activeLbl);
+        }
+      });
+
+      document.getElementById("btnAcceptAI").addEventListener("click", () => {
+        const fd = frameCache.get(currentFrame);
+        if (fd && fd.telemetry && fd.telemetry.ai_suggestion) {
+          tagCurrent(fd.telemetry.ai_suggestion.label);
+        }
+      });
+
+      // Header tools
+      document.getElementById("btnLoadGT").addEventListener("click", async () => {
+        if (confirm("Load the official 5-minute competition ground truth into your workspace?")) {
+          const res = await fetch("/api/load_reference_gt", { method: "POST" });
+          const data = await res.json();
+          alert(`Successfully imported ${data.loaded_count} reference frames!`);
+          frameCache.clear();
+          loadFrame(currentFrame);
+          fetchOverview();
+        }
+      });
+
+      document.getElementById("btnAutoAI").addEventListener("click", async () => {
+        if (rangeIn === null || rangeOut === null) {
+          alert("Please mark an In (I) and Out (O) range first!");
+          return;
+        }
+        const res = await fetch("/api/ai_fill_range", {
+          method: "POST",
+          body: JSON.stringify({ start: rangeIn, end: rangeOut })
+        });
+        const d = await res.json();
+        alert(`AI Heuristic labeled ${d.filled_count} frames!`);
+        frameCache.clear();
+        loadFrame(currentFrame);
+        fetchOverview();
+      });
+
+      document.getElementById("btnExportCSV").addEventListener("click", async () => {
+        const res = await fetch("/api/export_csv", { method: "POST" });
+        const d = await res.json();
+        alert(`Saved ${d.labeled_count} labels to ${d.export_path}`);
+      });
+
+      document.getElementById("btnExportTrain").addEventListener("click", async () => {
+        const res = await fetch("/api/export_training_set", { method: "POST" });
+        const d = await res.json();
+        if (d.error) alert(d.error);
+        else alert(`Exported ${d.labeled_count} training rows to ${d.labels_file}`);
+      });
+
+      // Jump controls
+      const jumpInput = document.getElementById("inputJumpFrame");
+      const doJump = () => {
+        const val = parseInt(jumpInput.value);
+        if (!isNaN(val)) loadFrame(val);
+      };
+      document.getElementById("btnJump").addEventListener("click", doJump);
+      jumpInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") doJump();
+      });
+
+      document.getElementById("btnJump1stKO").addEventListener("click", () => {
+        windowStart = 11185;
+        windowEnd = 11185 + 22500;
+        loadFrame(11185);
+        renderRibbon();
+      });
+
+      document.getElementById("btnJump2ndKO").addEventListener("click", () => {
+        windowStart = 113741;
+        windowEnd = Math.min(totalFrames, 113741 + 22500);
+        loadFrame(113741);
+        renderRibbon();
+      });
+
+      document.getElementById("btnHelp").addEventListener("click", () => {
+        alert(
+          "🎮 Barca Vision Labeler -- Keyboard Shortcuts Cheat Sheet:\n\n" +
+          "• Spacebar: Play / Pause (25 fps real-time)\n" +
+          "• Left / Right Arrow: Step 1 frame backward / forward\n" +
+          "• Shift + Left / Right: Step 1 second (25 frames)\n" +
+          "• Ctrl + Left / Right: Step 5 seconds (125 frames)\n" +
+          "• H: Label active frame / range as HOME (Barcelona)\n" +
+          "• A: Label active frame / range as AWAY (Athletic)\n" +
+          "• D: Label active frame / range as DEAD BALL (Stoppage)\n" +
+          "• X / Delete: Clear label for active frame / range\n" +
+          "• I or [: Mark In-point for range selection\n" +
+          "• O or ]: Mark Out-point for range selection\n" +
+          "• R: Reset / clear In-Out selection\n" +
+          "• Enter: Accept AI Pre-Annotation suggestion\n\n" +
+          "⚡ Pro-Tip: Mark In (I), scrub to end of spell, mark Out (O), then press H, A, or D to label 300+ frames in 1 second!"
+        );
+      });
+
+      // Zoom buttons
+      document.getElementById("btnZoom15m").addEventListener("click", () => {
+        windowStart = 11185;
+        windowEnd = 11185 + 22500;
+        renderRibbon();
+        updateTimelinePlayhead();
+        updateSelectionMarker();
+      });
+      document.getElementById("btnZoom5m").addEventListener("click", () => {
+        windowStart = 11185;
+        windowEnd = 11185 + 7500;
+        renderRibbon();
+        updateTimelinePlayhead();
+        updateSelectionMarker();
+      });
+      document.getElementById("btnZoomFull").addEventListener("click", () => {
+        windowStart = 0;
+        windowEnd = totalFrames;
+        renderRibbon();
+        updateTimelinePlayhead();
+        updateSelectionMarker();
+      });
+
+      // Scrubber Clicking & Dragging
+      const ribbonBox = document.getElementById("ribbonBox");
+      ribbonBox.addEventListener("click", (e) => {
+        const rect = ribbonBox.getBoundingClientRect();
+        const pct = (e.clientX - rect.left) / rect.width;
+        const targetFrame = Math.round(windowStart + pct * (windowEnd - windowStart));
+        loadFrame(targetFrame);
+      });
+
+      // KEYBOARD SHORTCUTS
+      window.addEventListener("keydown", (e) => {
+        // Prevent shortcuts if typing in text inputs
+        if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+
+        if (e.code === "Space") {
+          e.preventDefault();
+          togglePlay();
+        } else if (e.code === "ArrowLeft") {
+          e.preventDefault();
+          if (e.shiftKey) loadFrame(currentFrame - fps);
+          else if (e.ctrlKey) loadFrame(currentFrame - fps * 5);
+          else loadFrame(currentFrame - 1);
+        } else if (e.code === "ArrowRight") {
+          e.preventDefault();
+          if (e.shiftKey) loadFrame(currentFrame + fps);
+          else if (e.ctrlKey) loadFrame(currentFrame + fps * 5);
+          else loadFrame(currentFrame + 1);
+        } else if (e.key === "h" || e.key === "H") {
+          tagCurrent("H");
+        } else if (e.key === "a" || e.key === "A") {
+          tagCurrent("A");
+        } else if (e.key === "d" || e.key === "D") {
+          tagCurrent("D");
+        } else if (e.key === "x" || e.key === "X" || e.code === "Delete") {
+          tagCurrent(null);
+        } else if (e.key === "i" || e.key === "I" || e.key === "[") {
+          rangeIn = currentFrame;
+          updateRangeUI();
+        } else if (e.key === "o" || e.key === "O" || e.key === "]") {
+          rangeOut = currentFrame;
+          updateRangeUI();
+        } else if (e.key === "r" || e.key === "R") {
+          rangeIn = null;
+          rangeOut = null;
+          updateRangeUI();
+        } else if (e.code === "Enter") {
+          const fd = frameCache.get(currentFrame);
+          if (fd && fd.telemetry && fd.telemetry.ai_suggestion) {
+            tagCurrent(fd.telemetry.ai_suggestion.label);
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
