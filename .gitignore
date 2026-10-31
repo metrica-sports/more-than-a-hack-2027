@@ -61,4 +61,5 @@ __pycache__/
 .venv/
 venv/
 env/
+uv.lock
 .DS_Store
