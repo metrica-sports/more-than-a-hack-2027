@@ -62,3 +62,18 @@ __pycache__/
 venv/
 env/
 .DS_Store
+
+# Terraform: estado y archivos locales
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc

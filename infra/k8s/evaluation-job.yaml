@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: evaluation-with-artifacts
+  namespace: mtah-local
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 300
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: evaluation
+          image: mtah-evaluation:local
+          imagePullPolicy: Never
+          command:
+            - python
+            - evaluation/run_evaluation.py
+          args:
+            - --out
+            - /artifacts
+          volumeMounts:
+            - name: artifacts
+              mountPath: /artifacts
+      volumes:
+        - name: artifacts
+          persistentVolumeClaim:
+            claimName: evaluation-artifacts
