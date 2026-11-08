@@ -2,6 +2,7 @@
 import copy
 import json
 import os
+import warnings
 
 import numpy as np
 
@@ -10,25 +11,44 @@ from . import data, features, emissions, decode
 PARAMS_PATH = os.path.join(data.ROOT, "solution", "params.json")
 
 
-def load_params(path=PARAMS_PATH):
+def params_path():
+    """MTAH_PARAMS overrides the default location (e.g. a file on Google Drive)."""
+    return os.environ.get("MTAH_PARAMS") or PARAMS_PATH
+
+
+def load_params(path=None, required=None):
     """Emission + decoding parameters. params.json is written by notebook 02 from the
-    calibration on the Metrica open games; without it the hand-set defaults are used."""
+    calibration on the Metrica open games.
+
+    required=True (or env MTAH_REQUIRE_PARAMS=1): a missing params.json is an error.
+    Otherwise the hand-set defaults are used, with a visible warning -- never silently.
+    """
+    path = path or params_path()
+    if required is None:
+        required = os.environ.get("MTAH_REQUIRE_PARAMS", "0") == "1"
     params, cfg = dict(emissions.PARAMS), copy.deepcopy(decode.DECODE)
-    if os.path.exists(path):
-        with open(path) as fh:
-            js = json.load(fh)
-        params.update(js["params"])
-        d = js["decode"]
-        cfg["min_len"] = {emissions.H: int(d["min_pos"]), emissions.A: int(d["min_pos"]),
-                          emissions.D: int(d["min_dead"])}
-        cfg["switch_cost"] = {k: float(d["switch"]) for k in cfg["switch_cost"]}
+    if not os.path.exists(path):
+        msg = (f"params.json non trovato in {path}: esegui prima il notebook 02 "
+               "(calibrazione) o indica il file con MTAH_PARAMS")
+        if required:
+            raise FileNotFoundError(msg)
+        warnings.warn(msg + " -- uso i parametri di DEFAULT", stacklevel=2)
+        return params, cfg
+    with open(path) as fh:
+        js = json.load(fh)
+    params.update(js["params"])
+    d = js["decode"]
+    cfg["min_len"] = {emissions.H: int(d["min_pos"]), emissions.A: int(d["min_pos"]),
+                      emissions.D: int(d["min_dead"])}  # same truncation as calibrate.make_cfg
+    cfg["switch_cost"] = {k: float(d["switch"]) for k in cfg["switch_cost"]}
     return params, cfg
 
 
-def run(params=None, decode_cfg=None, use_tagging=True, verbose=True):
+def run(params=None, decode_cfg=None, use_tagging=True, verbose=True, required=None):
     if params is None or decode_cfg is None:
-        p0, c0 = load_params()
-        params, decode_cfg = params or p0, decode_cfg or c0
+        p0, c0 = load_params(required=required)
+        params = p0 if params is None else params
+        decode_cfg = c0 if decode_cfg is None else decode_cfg
     atd = data.load_atd()
     f = features.compute(atd)
     ll = emissions.tracking_scores(f, params)

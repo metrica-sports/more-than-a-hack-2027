@@ -15,7 +15,9 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 from games import GAME, GAMES, require, half_video_blocks  # noqa: E402
 
-CACHE_DIR = os.path.join(ROOT, "solution", "cache")
+# MTAH_CACHE_DIR lets Colab keep the cache on Google Drive, so it survives runtime resets
+# and is shared between notebooks. Must be set before importing this package.
+CACHE_DIR = os.environ.get("MTAH_CACHE_DIR") or os.path.join(ROOT, "solution", "cache")
 HOME, AWAY = 0, 1
 FPS = GAMES[GAME]["fps"]
 PITCH = GAMES[GAME]["pitch"]          # (length, width) in metres
