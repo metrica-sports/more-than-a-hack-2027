@@ -2,3 +2,4 @@ numpy>=1.24
 pandas>=2.0
 matplotlib>=3.7
 notebook
+scikit-learn>=1.2   # solo per allenare il classificatore dei buchi (notebook 02)

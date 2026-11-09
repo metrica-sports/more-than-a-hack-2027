@@ -26,6 +26,8 @@ PARAMS = {
     "k_slow": 0.35,
     "k_still": 0.3,             # ball not moving for ~1 s with slow players
     "d_bias": -0.15,            # per-frame prior against D (play is live most of the time)
+    # ball gaps: weight of the gap classifier's log-odds of a dead ball (gaps.py); 0 = off
+    "k_gap": 0.0,
     # smart tagging
     "k_tag_team": 0.08,
     "k_tag_setpiece": 0.3,
@@ -59,6 +61,13 @@ def tracking_scores(f, p=PARAMS):
     still = np.nan_to_num(f["ball_still"]) * (slow > 0)
     ll[:, D] += p["k_still"] * still
     ll[:, D] += p["d_bias"]
+    return ll
+
+
+def gap_scores(gap_logit, p=PARAMS):
+    """Evidence for D inside the ball gaps from the gap classifier (gaps.gap_logit)."""
+    ll = np.zeros((len(gap_logit), 3), np.float32)
+    ll[:, D] = p.get("k_gap", 0.0) * gap_logit
     return ll
 
 

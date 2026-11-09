@@ -105,6 +105,32 @@ def labels_from_events(game):
     return lab
 
 
+def fill_native_gaps(ball, period):
+    """Linear interpolation of the ball inside each period. In the Metrica samples the ball is
+    missing almost only at dead ball (~95% of D frames vs ~10% of live frames), while in the
+    automatic tracking a stoppage is often still tracked: filling first and then cutting random
+    gaps (atd_like_ball) removes the 'missing = dead' shortcut. During a stoppage the filled ball
+    drifts slowly from where it went out to where play restarts, roughly a ball being carried
+    back."""
+    b = ball.copy()
+    for p in np.unique(period):
+        sl = np.where(period == p)[0]
+        seg = b[sl]
+        ok = ~np.isnan(seg[:, 0])
+        if ok.sum() < 2:
+            continue
+        t = np.arange(len(sl))
+        for k in range(2):
+            seg[:, k] = np.interp(t, t[ok], seg[ok, k])   # edges held constant
+        b[sl] = seg
+    return b
+
+
+def atd_like_ball(ball, period, rng, target=0.41, median_gap=268):
+    """Ball as in the automatic tracking: native gaps filled, then long random gaps cut."""
+    return drop_ball_like_atd(fill_native_gaps(ball, period), rng, target, median_gap)
+
+
 def drop_ball_like_atd(ball, rng, target=0.41, median_gap=268):
     """Remove the ball in long blocks so the clean sample data resembles the automatic
     tracking (in BAR-ATH the ball is missing ~41% of graded frames, in few long gaps)."""

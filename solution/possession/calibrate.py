@@ -10,7 +10,7 @@ import sys
 
 import numpy as np
 
-from . import features, emissions, decode, metrica
+from . import features, emissions, decode, metrica, gaps
 from .data import ROOT, CACHE_DIR
 
 sys.path.insert(0, os.path.join(ROOT, "evaluation"))
@@ -24,20 +24,45 @@ SEARCH = {  # (low, high) sampled uniformly
     "k_slow": (0.05, 0.8),
     "k_still": (0.0, 0.8),
     "d_bias": (-0.6, 0.1),
+    "k_gap": (0.0, 0.6),
 }
 DECODE_SEARCH = {"switch": (2.0, 15.0), "min_pos": (5, 75), "min_dead": (10, 150)}
 
 
-def prepare(games=(1, 2), seed=0):
+def prepare(games=(1, 2), seed=0, ball_mode="atd_like", gap_model=True):
+    """[(G, f, gt, gap_logit)] per game.
+
+    ball_mode: "atd_like" (default) fills the native Metrica gaps and cuts long random gaps, so a
+    missing ball is no longer a proxy for a dead ball (as in the automatic tracking);
+    "legacy" is the v1 protocol (native gaps + extra random gaps, 55% missing).
+    gap_model: the gap classifier for each game is trained on the OTHER game (leave-one-game-out),
+    so the calibration never sees a classifier that was fitted on the game it is scored on.
+    """
     rng = np.random.default_rng(seed)
     out = []
     for g in games:
         G = metrica.load_game(g)
         gt = metrica.labels_from_events(G)
-        G = dict(G, ball=metrica.drop_ball_like_atd(G["ball"], rng, target=0.55))
-        f = features.compute(G)
-        out.append((G, f, gt))
-    return out
+        if ball_mode == "atd_like":
+            b = metrica.atd_like_ball(G["ball"], G["period"], rng)
+        else:
+            b = metrica.drop_ball_like_atd(G["ball"], rng, target=0.55)
+        G = dict(G, ball=b)
+        out.append((G, features.compute(G), gt))
+    gl = [np.zeros(G["n_frames"], np.float32) for G, _, _ in out]
+    if gap_model and len(out) > 1:
+        sets = gaps.training_set(out)
+        for i, (G, f, gt) in enumerate(out):
+            X = np.concatenate([s[0] for j, s in enumerate(sets) if j != i])
+            y = np.concatenate([s[1] for j, s in enumerate(sets) if j != i])
+            gl[i] = gaps.gap_logit(f, G["ball"], blocks_of(gt), gaps.fit(X, y))
+    return [(G, f, gt, l) for (G, f, gt), l in zip(out, gl)]
+
+
+def fit_gap_model(prepared):
+    """Final gap classifier, fitted on ALL the prepared Metrica games (for the challenge game)."""
+    sets = gaps.training_set(prepared)
+    return gaps.fit(np.concatenate([s[0] for s in sets]), np.concatenate([s[1] for s in sets]))
 
 
 def blocks_of(gt):
@@ -47,8 +72,8 @@ def blocks_of(gt):
 
 def score(prepared, params, cfg):
     s = []
-    for G, f, gt in prepared:
-        ll = emissions.tracking_scores(f, params)
+    for G, f, gt, gl in prepared:
+        ll = emissions.tracking_scores(f, params) + emissions.gap_scores(gl, params)
         pred = decode.decode_match(ll, blocks_of(gt), G["n_frames"], cfg)
         gtc, prc = pm.label_codes(gt), pm.label_codes(pred)
         s.append(pm.spell_scores(gtc, prc, pm.valid_runs(gtc))["mean_f1"])
