@@ -28,6 +28,8 @@ PARAMS = {
     "d_bias": -0.15,            # per-frame prior against D (play is live most of the time)
     # ball gaps: weight of the gap classifier's log-odds of a dead ball (gaps.py); 0 = off
     "k_gap": 0.0,
+    # dead-ball classifier on every frame (deadball.py): weight of its log-odds; 0 = off
+    "k_dead": 0.0,
     # smart tagging
     "k_tag_team": 0.08,
     "k_tag_setpiece": 0.3,
@@ -68,6 +70,13 @@ def gap_scores(gap_logit, p=PARAMS):
     """Evidence for D inside the ball gaps from the gap classifier (gaps.gap_logit)."""
     ll = np.zeros((len(gap_logit), 3), np.float32)
     ll[:, D] = p.get("k_gap", 0.0) * gap_logit
+    return ll
+
+
+def dead_scores(dead_logit, p=PARAMS):
+    """Evidence for D on every frame from the dead-ball classifier (deadball.dead_logit)."""
+    ll = np.zeros((len(dead_logit), 3), np.float32)
+    ll[:, D] = p.get("k_dead", 0.0) * dead_logit
     return ll
 
 

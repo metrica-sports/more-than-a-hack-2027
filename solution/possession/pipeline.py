@@ -6,7 +6,7 @@ import warnings
 
 import numpy as np
 
-from . import data, features, emissions, decode, gaps
+from . import data, features, emissions, decode, gaps, deadball
 
 PARAMS_PATH = os.path.join(data.ROOT, "solution", "params.json")
 
@@ -20,6 +20,12 @@ def gap_model_path():
     """gap_model.json sits next to params.json (on Drive when running on Colab)."""
     return os.environ.get("MTAH_GAP_MODEL") or os.path.join(os.path.dirname(params_path()),
                                                              "gap_model.json")
+
+
+def dead_model_path():
+    """deadball_model.pkl sits next to params.json (on Drive when running on Colab)."""
+    return os.environ.get("MTAH_DEAD_MODEL") or os.path.join(os.path.dirname(params_path()),
+                                                             "deadball_model.pkl")
 
 
 def load_params(path=None, required=None):
@@ -64,6 +70,12 @@ def run(params=None, decode_cfg=None, use_tagging=True, verbose=True, required=N
                                 "(lo scrive accanto a params.json) o indica MTAH_GAP_MODEL")
     gl = gaps.gap_logit(f, atd["ball"], data.graded_blocks(), gap_model)
     ll = ll + emissions.gap_scores(gl, params)
+    dead_model = deadball.load(dead_model_path()) if params.get("k_dead", 0) > 0 else None
+    if params.get("k_dead", 0) > 0 and dead_model is None:
+        raise FileNotFoundError("k_dead > 0 ma deadball_model.pkl manca: esegui il notebook 02 "
+                                "(lo scrive accanto a params.json) o indica MTAH_DEAD_MODEL")
+    dl = deadball.dead_logit(f, atd, dead_model)
+    ll = ll + emissions.dead_scores(dl, params)
     signs = None
     if use_tagging:
         tags = data.load_smart_tagging()
@@ -74,7 +86,7 @@ def run(params=None, decode_cfg=None, use_tagging=True, verbose=True, required=N
         g = data.graded_mask()
         u, c = np.unique(labels[g], return_counts=True)
         print("graded label counts:", {str(k): int(v) for k, v in zip(u, c)})
-    return {"labels": labels, "features": f, "scores": ll, "tag_signs": signs, "gap_logit": gl, "atd": atd,
+    return {"labels": labels, "features": f, "scores": ll, "tag_signs": signs, "gap_logit": gl, "dead_logit": dl, "atd": atd,
             "params": params, "decode": decode_cfg}
 
 
