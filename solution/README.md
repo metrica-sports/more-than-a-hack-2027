@@ -35,3 +35,6 @@ Ogni notebook gira in un runtime separato: quello che deve passare da uno all'al
 - I notebook 02 e 03 installano `solution/requirements.txt` all'avvio. Se pip cambia una libreria già caricata, il runtime si riavvia da solo una volta: basta rieseguire il notebook dall'inizio.
 
 Tempi indicativi (1 core): parsing ATD ~1 min la prima volta, pipeline ~5 s, calibrazione ~3,6 s per configurazione.
+
+## Continuità
+`solution/continuity/` contiene il contesto per chi riprende il lavoro: stato e decisioni (`STRATEGIA.md`), diario degli esperimenti con i numeri (`EXPERIMENTS.md`), script e risultati grezzi degli esperimenti su Metrica. Non serve a generare la submission.
