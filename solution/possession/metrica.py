@@ -143,3 +143,70 @@ def drop_ball_like_atd(ball, rng, target=0.41, median_gap=268):
         missing[start:start + length] = True
     b[missing] = np.nan
     return b
+
+
+# --- synthetic Smart Tagging ---------------------------------------------------------------------
+# Metrica has no Smart Tagging, so set-piece tags are synthesised from its events to calibrate the
+# set-piece anchors (setpieces.py). They mimic the real tagging: a few-second window around the
+# restart, a Type, the taker's team (N/A for throw-ins, as in the real file) and, above all, MANY
+# MISSES. Keep rates = restarts tagged in a whole match of the Smart Tagging (DATA.md: throw-in 26,
+# corner 12, goal kick 10, free kick 5, kickoffs all) / typical counts per match (~45, ~10, ~15,
+# ~25). A few false positives are added at random live moments.
+
+SP_TYPE = {"THROW IN": "Throw-in", "CORNER KICK": "Corner Kick", "FREE KICK": "Free Kick",
+           "PENALTY": "Free Kick", "GOAL KICK": "Goal Kick"}
+SP_KEEP = {"Throw-in": 0.55, "Corner Kick": 0.9, "Goal Kick": 0.65, "Free Kick": 0.25,
+           "Kick Off (After Goal)": 1.0, "Kick Off (Start)": 1.0}
+
+
+def synthetic_tags(game, rng, fps=25, false_pos_per_half=2):
+    ev = game["events"].sort_values("Start Frame")
+    n = game["n_frames"]
+    goals = [int(r["Start Frame"]) - 1 for _, r in ev.iterrows()
+             if r["Type"] == "SHOT" and "GOAL" in str(r["Subtype"]).upper()]
+    tags = []
+
+    def window(r):
+        a = r - int(rng.uniform(1.0, 4.0) * fps)
+        return a, a + int(rng.uniform(3.0, 7.0) * fps)
+
+    for _, e in ev.iterrows():
+        st = str(e["Subtype"]).upper()
+        r = int(e["Start Frame"]) - 1
+        typ = None
+        if e["Type"] == "SET PIECE":
+            base = st.split("-")[0]
+            if base == "KICK OFF":
+                typ = ("Kick Off (After Goal)" if any(0 < r - g < 180 * fps for g in goals)
+                       else "Kick Off (Start)")
+            else:
+                typ = SP_TYPE.get(base)
+        elif "GOAL KICK" in st and e["Type"] in ("PASS", "BALL LOST"):
+            typ = "Goal Kick"
+        if typ is None or rng.random() > SP_KEEP[typ]:
+            continue
+        a, b = window(r)
+        team = "N/A" if typ == "Throw-in" else e["Team"]
+        tags.append({"code": "SET PIECES", "start_frame": a, "end_frame": b,
+                     "tags": {"Type": typ, "Team": team}})
+    for g in goals:
+        tags.append({"code": "GOALS", "start_frame": g - int(rng.uniform(5, 15) * fps),
+                     "end_frame": g + int(rng.uniform(0, 3) * fps), "tags": {"Team": "N/A"}})
+    for p in np.unique(game["period"]):
+        fr = np.where(game["period"] == p)[0]
+        for _ in range(false_pos_per_half):
+            r = int(rng.integers(fr[0] + 60 * fps, fr[-1] - 60 * fps))
+            a, b = window(r)
+            tags.append({"code": "SET PIECES", "start_frame": a, "end_frame": b,
+                         "tags": {"Type": str(rng.choice(list(SP_KEEP))), "Team": "N/A"}})
+    return tags
+
+
+def true_restarts(game, fps=25):
+    """[(frame, team)] of the restarts in the events (for checking the restart detector only)."""
+    out = []
+    for _, e in game["events"].iterrows():
+        if e["Type"] == "SET PIECE" or ("GOAL KICK" in str(e["Subtype"]).upper()
+                                         and e["Type"] in ("PASS", "BALL LOST")):
+            out.append((int(e["Start Frame"]) - 1, HOME if e["Team"] == "Home" else AWAY))
+    return out

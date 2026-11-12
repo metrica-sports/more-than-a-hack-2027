@@ -6,7 +6,7 @@ import warnings
 
 import numpy as np
 
-from . import data, features, emissions, decode, gaps, deadball
+from . import data, features, emissions, decode, gaps, deadball, setpieces
 
 PARAMS_PATH = os.path.join(data.ROOT, "solution", "params.json")
 
@@ -80,7 +80,11 @@ def run(params=None, decode_cfg=None, use_tagging=True, verbose=True, required=N
     if use_tagging:
         tags = data.load_smart_tagging()
         ll_tag, signs = emissions.tagging_scores(tags, f, atd["n_frames"], params)
-        ll = ll + ll_tag
+        ll_sp, sp_info = setpieces.setpiece_scores(tags, f, atd["ball"], atd["n_frames"], params)
+        ll = ll + ll_tag + ll_sp
+        if verbose and sp_info:
+            print("set pieces: segno del tag Team", sp_info["team_sign"],
+                  "| accordo con il giocatore piu' vicino", sp_info["team_agreement"])
     labels = decode.decode_match(ll, data.graded_blocks(), atd["n_frames"], decode_cfg)
     if verbose:
         g = data.graded_mask()

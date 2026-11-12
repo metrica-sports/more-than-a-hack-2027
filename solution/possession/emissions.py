@@ -32,10 +32,15 @@ PARAMS = {
     "k_dead": 0.0,
     # smart tagging
     "k_tag_team": 0.08,
-    "k_tag_setpiece": 0.3,
+    "k_tag_setpiece": 0.0,      # old SET PIECES prior, replaced by setpieces.py (k_sp_*)
+    # set-piece anchors (setpieces.py): D before the restart, taker's team after it
+    "k_sp_dead": 0.0,
+    "k_sp_team": 0.0,
+    "sp_back_scale": 1.0,
 }
 
-TEAM_TAG = {"barcelona": HOME, "atletic club": AWAY, "athletic club": AWAY}
+TEAM_TAG = {"barcelona": HOME, "atletic club": AWAY, "athletic club": AWAY,
+            "home": HOME, "away": AWAY}      # home/away: synthetic tags on the Metrica games
 
 
 def _control(d, p):
@@ -80,6 +85,10 @@ def dead_scores(dead_logit, p=PARAMS):
     return ll
 
 
+# handled by setpieces.py: their team tag refers to the restart, not to the whole window
+ANCHOR_CODES = {"SET PIECES", "GOALS"}
+
+
 def tag_team_signs(tags, f):
     """For each team-tagged code: +1 if the tag names the team in possession, -1 if the
     opponent. Decided algorithmically by agreement with the nearest-player team on frames
@@ -89,7 +98,7 @@ def tag_team_signs(tags, f):
     agree, total = {}, {}
     for t in tags:
         team = TEAM_TAG.get((t["tags"].get("Team") or "").strip().lower())
-        if team is None:
+        if team is None or t["code"] in ANCHOR_CODES:
             continue
         sl = slice(t["start_frame"], t["end_frame"])
         m = clear[sl]
@@ -105,12 +114,12 @@ def tagging_scores(tags, f, n, p=PARAMS, signs=None):
     for t in tags:
         a, b = max(t["start_frame"], 0), min(t["end_frame"], n)
         team = TEAM_TAG.get((t["tags"].get("Team") or "").strip().lower())
-        if team is not None and t["code"] in signs:
+        if team is not None and t["code"] in signs and t["code"] not in ANCHOR_CODES:
             sign = signs[t["code"]][0]
             tgt = team if sign > 0 else 1 - team
             ll[a:b, tgt] += p["k_tag_team"]
             ll[a:b, 1 - tgt] -= p["k_tag_team"]
-        if t["code"] == "SET PIECES":
+        if t["code"] == "SET PIECES" and p["k_tag_setpiece"] > 0:
             # the tag is a ~5 s window around the restart: the first part is still dead
             mid = (a + b) // 2
             ll[a:mid, D] += p["k_tag_setpiece"]

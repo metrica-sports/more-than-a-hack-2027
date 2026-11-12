@@ -1,5 +1,12 @@
-numpy>=1.24
-pandas>=2.0
-matplotlib>=3.7
-notebook
-scikit-learn>=1.2   # classificatore di palla ferma (allenamento nel 02, inferenza nel 03)
+# Versioni ESATTE: servono a rigenerare lo stesso file di submission.
+# deadball_model.pkl (scritto dal notebook 02) va caricato con la stessa scikit-learn con cui e'
+# stato salvato: i notebook 02 e 03 installano questo file su Colab prima di importare qualcosa.
+# Verificate con wheel binarie per Python 3.11, 3.12 e 3.13 (Linux x86_64).
+numpy==2.2.6
+pandas==2.2.3
+scipy==1.15.3
+scikit-learn==1.6.1
+joblib==1.6.0
+threadpoolctl==3.8.0
+matplotlib==3.10.3
+# Solo per aprire i notebook in locale (non serve a run.py ne' su Colab): pip install notebook

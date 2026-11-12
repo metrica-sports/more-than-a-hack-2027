@@ -10,7 +10,7 @@ import sys
 
 import numpy as np
 
-from . import features, emissions, decode, metrica, gaps, deadball
+from . import features, emissions, decode, metrica, gaps, deadball, setpieces
 from .data import ROOT, CACHE_DIR
 
 sys.path.insert(0, os.path.join(ROOT, "evaluation"))
@@ -25,12 +25,15 @@ SEARCH = {  # (low, high) sampled uniformly
     "k_still": (0.0, 0.8),
     "d_bias": (-0.6, 0.1),
     "k_dead": (0.0, 0.8),       # k_gap not searched: the dead-ball model already sees the gaps
+    "k_sp_dead": (0.0, 1.0),    # set-piece anchors, calibrated with synthetic tags (metrica.py)
+    "k_sp_team": (0.0, 1.5),
+    "sp_back_scale": (0.5, 1.5),
 }
 DECODE_SEARCH = {"switch": (2.0, 15.0), "min_pos": (5, 75), "min_dead": (10, 150)}
 
 
 def prepare(games=(1, 2), seed=0, ball_mode="atd_like", gap_model=False, dead_model=True):
-    """[(G, f, gt, gap_logit, dead_logit)] per game.
+    """[(G, f, gt, gap_logit, dead_logit, synthetic_tags)] per game.
 
     ball_mode: "atd_like" (default) fills the native Metrica gaps and cuts long random gaps, so a
     missing ball is no longer a proxy for a dead ball (as in the automatic tracking);
@@ -64,7 +67,8 @@ def prepare(games=(1, 2), seed=0, ball_mode="atd_like", gap_model=False, dead_mo
             X = np.concatenate([s[0] for j, s in enumerate(sets) if j != i])
             y = np.concatenate([s[1] for j, s in enumerate(sets) if j != i])
             dl[i] = deadball.dead_logit(f, G, deadball.fit(X, y))
-    return [(G, f, gt, l, d) for (G, f, gt), l, d in zip(out, gl, dl)]
+    tags = [metrica.synthetic_tags(G, rng) for G, _, _ in out]
+    return [(G, f, gt, l, d, t) for (G, f, gt), l, d, t in zip(out, gl, dl, tags)]
 
 
 def fit_gap_model(prepared):
@@ -86,9 +90,10 @@ def fit_dead_model(prepared):
 
 def score(prepared, params, cfg):
     s = []
-    for G, f, gt, gl, dl in prepared:
+    for G, f, gt, gl, dl, tags in prepared:
         ll = (emissions.tracking_scores(f, params) + emissions.gap_scores(gl, params)
-              + emissions.dead_scores(dl, params))
+              + emissions.dead_scores(dl, params)
+              + setpieces.setpiece_scores(tags, f, G["ball"], G["n_frames"], params)[0])
         pred = decode.decode_match(ll, blocks_of(gt), G["n_frames"], cfg)
         gtc, prc = pm.label_codes(gt), pm.label_codes(pred)
         s.append(pm.spell_scores(gtc, prc, pm.valid_runs(gtc))["mean_f1"])
